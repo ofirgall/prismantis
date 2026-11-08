@@ -3432,13 +3432,23 @@ test('in the ctrl+o transcript a shell row goes to the engine whole, so its outp
   await row.unmount()
 })
 
+const AFTER_TOOLS_TRANSCRIPT = [
+  { role: 'user', text: 'run the tests', toolUses: [] },
+  { role: 'assistant', text: 'Running them.', toolUses: [{ id: 't1', name: 'Bash', input: {} }] },
+  { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 't1', text: 'ok', isError: false }] },
+  { role: 'assistant', text: 'The tests pass.', toolUses: [] },
+]
+
 for (const spaceAfterTools of [false, true] as const) {
-  test(`spaceAfterTools ${spaceAfterTools} ${spaceAfterTools ? 'leaves' : 'leaves no'} blank line above text that follows tools, never above a reply's first block`, { options: { spaceAfterTools } }, async $ => {
+  test(`spaceAfterTools ${spaceAfterTools} spaces text that follows tool results ${spaceAfterTools ? 'by a blank line' : 'by nothing'}, never text after a prompt`, { options: { spaceAfterTools } }, async ($, on) => {
+    on('session.messages', () => ({ value: AFTER_TOOLS_TRANSCRIPT }))
+    const clock = mock.clock(on)
     for (const surface of ['terminal', 'desktop'] as const) {
-      for (const isFirstOfReply of [true, false]) {
-        const ui = await $.ui.mount({ plugin: 'prismantis', surface, component: 'AssistantMessage', props: { text: 'The tests pass.', isFirstOfReply } })
+      for (const [id, text, after] of [['m-first', 'Running them.', false], ['m-after', 'The tests pass.', true]] as const) {
+        const ui = await $.ui.mount({ plugin: 'prismantis', surface, component: 'AssistantMessage', requestId: `${surface}-${id}`, props: { text, isFirstOfReply: true } })
+        await clock.settle()
         const spaced = (await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1)
-        expect(spaced).toBe(spaceAfterTools && !isFirstOfReply)
+        expect(spaced).toBe(spaceAfterTools && after)
         await ui.unmount()
       }
     }

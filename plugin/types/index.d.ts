@@ -24,6 +24,7 @@ declare module 'claude-code' {
       setupLand: string
       foundPaths: string[]
       awaiting: { key: string; at: number }[]
+      afterTools: string[]
       blink: boolean
       drawn: StateFamily<number>
     }

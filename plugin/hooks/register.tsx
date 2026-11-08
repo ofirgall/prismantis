@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, PluginOptions, PromptOrigin, Register, RenderElement, RenderSurface } from 'claude-code'
+import type { EngineInterface, PluginOptions, PromptOrigin, Register, RenderElement, RenderSurface, SessionMessage } from 'claude-code'
 
 import { clockText, endedAt, promptKey, sentAt, withRecord } from './clock'
 import type { Formula } from './latex'
@@ -80,6 +80,7 @@ const setupFocus = atom({ plugin: 'prismantis', key: 'setupFocus' } as const, ''
 const setupLand = atom({ plugin: 'prismantis', key: 'setupLand' } as const, '')
 const foundPaths = atom({ plugin: 'prismantis', key: 'foundPaths' } as const, [])
 const awaiting = atom({ plugin: 'prismantis', key: 'awaiting' } as const, [] as { key: string; at: number }[])
+const afterTools = atom({ plugin: 'prismantis', key: 'afterTools' } as const, [] as string[])
 const blink = atom({ plugin: 'prismantis', key: 'blink' } as const, false)
 const BLINK_MS = 500
 const HELD_TURNS = 2
@@ -390,6 +391,32 @@ const forgetMisses = (checks: PathChecks, call: Record<string, unknown>) => {
   const path = checks.asked.size < MAX_ASKED ? writtenPath(call) : undefined
   if (path === undefined) checks.asked = new Set(checks.found)
   else for (let at = path; at.includes('/'); at = at.slice(0, at.lastIndexOf('/'))) checks.asked.delete(at)
+}
+
+const MAX_AFTER_TOOLS = 500
+const AFTER_TOOLS_RETRIES = [0, 500, 2000]
+
+const followsTools = (messages: readonly SessionMessage[], text: string): boolean | undefined => {
+  const probe = text.trim().slice(0, 200)
+  if (probe === '') return false
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]!
+    if (message.role !== 'assistant' || !message.text.includes(probe)) continue
+    const before = messages[i - 1]
+    return before !== undefined && before.role === 'user' && (before.toolResults?.length ?? 0) > 0
+  }
+  return undefined
+}
+
+const checkAfterTools = ($: EngineInterface, asked: Set<string>, id: string, text: string, tries = 0): void => {
+  if (tries === 0 && asked.has(id)) return
+  asked.add(id)
+  $.clock.after(AFTER_TOOLS_RETRIES[tries]!, async () => {
+    const messages = await $.session.messages()
+    const found = Array.isArray(messages) ? followsTools(messages, text) : false
+    if (found === undefined && tries + 1 < AFTER_TOOLS_RETRIES.length) return checkAfterTools($, asked, id, text, tries + 1)
+    if (found) await persist($, () => update($, afterTools, list => [...list.filter(x => x !== id), id].slice(-MAX_AFTER_TOOLS)))
+  })
 }
 
 const statPaths = async ($: EngineInterface, paths: string[]): Promise<void> => {
@@ -788,6 +815,7 @@ export const register: Register = (on, options) => {
   const picked: Picked = { theme: firstTheme, options, latex }
   const probes: Probes = {}
   const pathChecks: PathChecks = { asked: new Set(), batch: [], found: new Set() }
+  const toolsAsked = new Set<string>()
   const forSurface = (base: Style, { surface, viewport }: { surface: RenderSurface; viewport?: { isFullscreen?: boolean } }, links: LinkReach): Style => {
     const drawn = surface === 'terminal' ? (links.http || links.editor ? { ...base, httpLinks: links.http, editorLinks: links.editor, obsidianLinks: links.editor && viewport?.isFullscreen === false, fileLinks: links.files, pathLinks: links.paths } : base) : { ...base, htmlCopy: null, nativeCode: true, gridFace: surface === 'desktop', monoFace: surface === 'desktop' && links.monoText }
     return surface === 'mobile' && drawn.copyButtonStyle === 'hover' ? { ...drawn, copyButtonStyle: 'inline' } : drawn
@@ -1052,7 +1080,9 @@ export const register: Register = (on, options) => {
     const framed = replyStyleFor(surfaceStyle, e.props.text)
     const drawn = drawMarkdown($, el, narration ? { ...framed, narration } : framed, blocks, columns - replyRoom(framed), math, pictures, reply, open, { id: e.requestId, press: reach.marks })
     const replied = renderReply(el, framed, drawn, e.props.isFirstOfReply === true, columns, corner)
-    return style.spaceAfterTools && e.props.isFirstOfReply !== true ? <el.Box flexDirection="column" marginTop={1}>{replied}</el.Box> : replied
+    if (!style.spaceAfterTools) return replied
+    checkAfterTools($, toolsAsked, e.requestId, e.props.text)
+    return (await read($, afterTools)).includes(e.requestId) ? <el.Box flexDirection="column" marginTop={1}>{replied}</el.Box> : replied
   })
 
   on('prismantis.markdown', here, async ($, e, next) => {
