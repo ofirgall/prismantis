@@ -1051,7 +1051,8 @@ export const register: Register = (on, options) => {
     const columns = columnsOf(e.viewport, surfaceStyle)
     const framed = replyStyleFor(surfaceStyle, e.props.text)
     const drawn = drawMarkdown($, el, narration ? { ...framed, narration } : framed, blocks, columns - replyRoom(framed), math, pictures, reply, open, { id: e.requestId, press: reach.marks })
-    return renderReply(el, framed, drawn, e.props.isFirstOfReply === true, columns, corner)
+    const replied = renderReply(el, framed, drawn, e.props.isFirstOfReply === true, columns, corner)
+    return style.spaceAfterTools && e.props.isFirstOfReply !== true ? <el.Box flexDirection="column" marginTop={1}>{replied}</el.Box> : replied
   })
 
   on('prismantis.markdown', here, async ($, e, next) => {

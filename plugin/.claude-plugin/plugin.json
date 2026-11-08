@@ -143,6 +143,12 @@
       "default": "plain",
       "options": ["plain", "dim"]
     },
+    "spaceAfterTools": {
+      "type": "boolean",
+      "title": "Space after tools",
+      "description": "Leave a blank line above Claude's text when it follows tool calls in the same reply, so a block of tool rows stands apart from the next sentence.",
+      "default": false
+    },
     "taskStyle": {
       "type": "string",
       "title": "Task list style",

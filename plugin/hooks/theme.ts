@@ -29,6 +29,7 @@ export type Style = {
   toolStyle: 'chat' | 'tree-dim' | 'tree-bold' | 'classic'
   toolOutput: 'full' | 'quiet'
   shellOutput: 'plain' | 'dim'
+  spaceAfterTools: boolean
   runningDot: 'ring' | 'blink'
   dotDark?: boolean
   unreadPrompts: boolean
@@ -117,6 +118,7 @@ export const resolveStyle = (options: PluginOptions): Style => {
     toolStyle: pick(options.toolStyle, ['chat', 'tree-dim', 'tree-bold', 'classic'] as const, 'chat'),
     toolOutput: pick(options.toolOutput, ['full', 'quiet'] as const, 'full'),
     shellOutput: pick(options.shellOutput, ['plain', 'dim'] as const, 'plain'),
+    spaceAfterTools: options.spaceAfterTools === true,
     runningDot: pick(options.runningDot, ['ring', 'blink'] as const, 'ring'),
     unreadPrompts: options.unreadPrompts === true,
     diffStyle: pick(options.diffStyle, ['card', 'full', 'marks', 'bar'] as const, 'card'),
