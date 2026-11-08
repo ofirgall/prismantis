@@ -3470,3 +3470,18 @@ for (const spaceAfterTools of [false, true] as const) {
     }
   })
 }
+
+test('spaceAfterTools finds text that reaches the transcript only after its retries, once the next tool call starts', { options: { spaceAfterTools: true } }, async ($, on) => {
+  let transcript = AFTER_TOOLS_TRANSCRIPT.slice(0, 3)
+  on('session.messages', () => ({ value: transcript }))
+  on('tool.call', () => ({ result: {} }))
+  const clock = mock.clock(on)
+  const ui = await $.ui.mount({ plugin: 'prismantis', surface: 'terminal', component: 'AssistantMessage', requestId: 'late-1', props: { text: 'The tests pass.', isFirstOfReply: true } })
+  await clock.settle()
+  expect(await ui.find({ type: 'Text', text: /^---$/ })).toBeUndefined()
+  transcript = AFTER_TOOLS_TRANSCRIPT
+  await $.tool.call({ tool: 'Bash', command: 'ls' })
+  await clock.settle()
+  expect(await ui.find({ type: 'Text', text: /^---$/ })).toBeDefined()
+  await ui.unmount()
+})
