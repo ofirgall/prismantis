@@ -1,6 +1,6 @@
 {
   "name": "prismantis",
-  "version": "0.45.3-ofir.3",
+  "version": "0.45.3-ofir.4",
   "description": "Colorful, themeable rendering for Claude Code replies: tables, headings, code, numbers, paths and links.",
   "author": {
     "name": "Nahum Litvin",
@@ -146,7 +146,7 @@
     "spaceAfterTools": {
       "type": "boolean",
       "title": "Space after tools",
-      "description": "Leave a blank line above Claude's text when it follows tool calls in the same reply, so a block of tool rows stands apart from the next sentence.",
+      "description": "Draw a --- line above Claude's text when it follows tool calls, so a block of tool rows stands apart from the next sentence.",
       "default": false
     },
     "taskStyle": {

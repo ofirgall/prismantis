@@ -1082,7 +1082,7 @@ export const register: Register = (on, options) => {
     const replied = renderReply(el, framed, drawn, e.props.isFirstOfReply === true, columns, corner)
     if (!style.spaceAfterTools) return replied
     checkAfterTools($, toolsAsked, e.requestId, e.props.text)
-    return (await read($, afterTools)).includes(e.requestId) ? <el.Box flexDirection="column" marginTop={1}>{replied}</el.Box> : replied
+    return (await read($, afterTools)).includes(e.requestId) ? <el.Box flexDirection="column"><el.Text color={style.theme.rule}>---</el.Text>{replied}</el.Box> : replied
   })
 
   on('prismantis.markdown', here, async ($, e, next) => {
