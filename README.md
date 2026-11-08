@@ -392,6 +392,7 @@ Options sit under `options`, keyed by the plugin's install name. Project setting
 | `toolRows` | `true`, `false` | `true` |
 | `toolStyle` | `chat`, `tree-dim`, `tree-bold`, `classic` | `chat` |
 | `toolOutput` | `full`, `quiet` | `full` |
+| `spaceAfterTools` | `true` (a blank line above Claude's text when it follows tool calls in the same reply), `false` | `false` |
 | `runningDot` | `ring` (a still `◌`), `blink` (`●` on and off every half second) | `ring` |
 | `unreadPrompts` | `true` (a prompt stays grey and blinks until the model starts on it), `false` | `false` |
 | `copyButtons` | `true`, `false` | `true` |
