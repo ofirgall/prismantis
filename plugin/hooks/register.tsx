@@ -394,7 +394,9 @@ const forgetMisses = (checks: PathChecks, call: Record<string, unknown>) => {
 }
 
 const MAX_AFTER_TOOLS = 500
-const AFTER_TOOLS_RETRIES = [0, 500, 2000]
+const AFTER_TOOLS_RETRIES = [0, 1000, 5000, 15000, 60000]
+
+type ToolsChecks = { asked: Set<string>; pending: Map<string, string> }
 
 const followsTools = (messages: readonly SessionMessage[], text: string): boolean | undefined => {
   const probe = text.trim().slice(0, 200)
@@ -408,15 +410,36 @@ const followsTools = (messages: readonly SessionMessage[], text: string): boolea
   return undefined
 }
 
-const checkAfterTools = ($: EngineInterface, asked: Set<string>, id: string, text: string, tries = 0): void => {
-  if (tries === 0 && asked.has(id)) return
-  asked.add(id)
+const resolveAfterTools = async ($: EngineInterface, checks: ToolsChecks): Promise<void> => {
+  if (checks.pending.size === 0) return
+  const messages = await $.session.messages()
+  if (!Array.isArray(messages)) return
+  const hits: string[] = []
+  for (const [id, text] of checks.pending) {
+    const found = followsTools(messages, text)
+    if (found === undefined) continue
+    checks.pending.delete(id)
+    if (found) hits.push(id)
+  }
+  if (hits.length) await persist($, () => update($, afterTools, list => [...list.filter(x => !hits.includes(x)), ...hits].slice(-MAX_AFTER_TOOLS)))
+}
+
+const retryAfterTools = ($: EngineInterface, checks: ToolsChecks, id: string, tries: number): void => {
   $.clock.after(AFTER_TOOLS_RETRIES[tries]!, async () => {
-    const messages = await $.session.messages()
-    const found = Array.isArray(messages) ? followsTools(messages, text) : false
-    if (found === undefined && tries + 1 < AFTER_TOOLS_RETRIES.length) return checkAfterTools($, asked, id, text, tries + 1)
-    if (found) await persist($, () => update($, afterTools, list => [...list.filter(x => x !== id), id].slice(-MAX_AFTER_TOOLS)))
+    await resolveAfterTools($, checks).catch(() => undefined)
+    if (checks.pending.has(id) && tries + 1 < AFTER_TOOLS_RETRIES.length) retryAfterTools($, checks, id, tries + 1)
   })
+}
+
+const checkAfterTools = ($: EngineInterface, checks: ToolsChecks, id: string, text: string): void => {
+  if (checks.pending.has(id)) {
+    checks.pending.set(id, text)
+    return
+  }
+  if (checks.asked.has(id)) return
+  checks.asked.add(id)
+  checks.pending.set(id, text)
+  retryAfterTools($, checks, id, 0)
 }
 
 const statPaths = async ($: EngineInterface, paths: string[]): Promise<void> => {
@@ -815,7 +838,7 @@ export const register: Register = (on, options) => {
   const picked: Picked = { theme: firstTheme, options, latex }
   const probes: Probes = {}
   const pathChecks: PathChecks = { asked: new Set(), batch: [], found: new Set() }
-  const toolsAsked = new Set<string>()
+  const toolsChecks: ToolsChecks = { asked: new Set(), pending: new Map() }
   const forSurface = (base: Style, { surface, viewport }: { surface: RenderSurface; viewport?: { isFullscreen?: boolean } }, links: LinkReach): Style => {
     const drawn = surface === 'terminal' ? (links.http || links.editor ? { ...base, httpLinks: links.http, editorLinks: links.editor, obsidianLinks: links.editor && viewport?.isFullscreen === false, fileLinks: links.files, pathLinks: links.paths } : base) : { ...base, htmlCopy: null, nativeCode: true, gridFace: surface === 'desktop', monoFace: surface === 'desktop' && links.monoText }
     return surface === 'mobile' && drawn.copyButtonStyle === 'hover' ? { ...drawn, copyButtonStyle: 'inline' } : drawn
@@ -884,6 +907,7 @@ export const register: Register = (on, options) => {
   }
 
   on('tool.call', async ($, e, next) => {
+    if (style.spaceAfterTools) $.clock.after(0, () => void resolveAfterTools($, toolsChecks).catch(() => undefined))
     if (style.runningDot !== 'blink') {
       const done = await next(e)
       forgetMisses(pathChecks, e)
@@ -945,6 +969,7 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.complete', async ($, e, next) => {
+    if (style.spaceAfterTools) $.clock.after(0, () => void resolveAfterTools($, toolsChecks).catch(() => undefined))
     if (style.clock !== 'off' && e.agentId === undefined) {
       const at = await $.clock.now()
       await persist($, () => update($, turnEnds, list => withRecord(list, { durationMs: e.durationMs, at })))
@@ -1081,7 +1106,7 @@ export const register: Register = (on, options) => {
     const drawn = drawMarkdown($, el, narration ? { ...framed, narration } : framed, blocks, columns - replyRoom(framed), math, pictures, reply, open, { id: e.requestId, press: reach.marks })
     const replied = renderReply(el, framed, drawn, e.props.isFirstOfReply === true, columns, corner)
     if (!style.spaceAfterTools) return replied
-    checkAfterTools($, toolsAsked, e.requestId, e.props.text)
+    checkAfterTools($, toolsChecks, e.requestId, e.props.text)
     return (await read($, afterTools)).includes(e.requestId) ? <el.Box flexDirection="column"><el.Text color={style.theme.rule}>---</el.Text>{replied}</el.Box> : replied
   })
 
