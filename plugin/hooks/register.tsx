@@ -404,7 +404,9 @@ const followsTools = (messages: readonly SessionMessage[], text: string): boolea
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i]!
     if (message.role !== 'assistant' || !message.text.includes(probe)) continue
-    const before = messages[i - 1]
+    let j = i - 1
+    while (j >= 0 && messages[j]!.role === 'assistant' && messages[j]!.text === '' && messages[j]!.toolUses.length === 0) j--
+    const before = messages[j]
     return before !== undefined && before.role === 'user' && (before.toolResults?.length ?? 0) > 0
   }
   return undefined
