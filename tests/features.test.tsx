@@ -3485,3 +3485,12 @@ test('spaceAfterTools finds text that reaches the transcript only after its retr
   expect(await ui.find({ type: 'Text', text: /^---$/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('spaceAfterTools looks past thinking between the tool results and the text', { options: { spaceAfterTools: true } }, async ($, on) => {
+  on('session.messages', () => ({ value: [...AFTER_TOOLS_TRANSCRIPT.slice(0, 3), { role: 'assistant', text: '', toolUses: [] }, AFTER_TOOLS_TRANSCRIPT[3]] }))
+  const clock = mock.clock(on)
+  const ui = await $.ui.mount({ plugin: 'prismantis', surface: 'terminal', component: 'AssistantMessage', requestId: 'thought-1', props: { text: 'The tests pass.', isFirstOfReply: true } })
+  await clock.settle()
+  expect(await ui.find({ type: 'Text', text: /^---$/ })).toBeDefined()
+  await ui.unmount()
+})
