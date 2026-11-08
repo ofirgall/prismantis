@@ -3440,14 +3440,14 @@ const AFTER_TOOLS_TRANSCRIPT = [
 ]
 
 for (const spaceAfterTools of [false, true] as const) {
-  test(`spaceAfterTools ${spaceAfterTools} spaces text that follows tool results ${spaceAfterTools ? 'by a blank line' : 'by nothing'}, never text after a prompt`, { options: { spaceAfterTools } }, async ($, on) => {
+  test(`spaceAfterTools ${spaceAfterTools} spaces text that follows tool results ${spaceAfterTools ? 'by a --- line' : 'by nothing'}, never text after a prompt`, { options: { spaceAfterTools } }, async ($, on) => {
     on('session.messages', () => ({ value: AFTER_TOOLS_TRANSCRIPT }))
     const clock = mock.clock(on)
     for (const surface of ['terminal', 'desktop'] as const) {
       for (const [id, text, after] of [['m-first', 'Running them.', false], ['m-after', 'The tests pass.', true]] as const) {
         const ui = await $.ui.mount({ plugin: 'prismantis', surface, component: 'AssistantMessage', requestId: `${surface}-${id}`, props: { text, isFirstOfReply: true } })
         await clock.settle()
-        const spaced = (await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1)
+        const spaced = (await ui.find({ type: 'Text', text: /^---$/ })) !== undefined
         expect(spaced).toBe(spaceAfterTools && after)
         await ui.unmount()
       }
