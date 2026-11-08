@@ -1650,7 +1650,7 @@ export const renderShellResult = (el: ElementTable, style: Style, output: unknow
   const head = shown.slice(0, RESULT_LINES).map(l => shortenPaths(l, style))
   return (
     <Box flexDirection="column">
-      {head.length === 0 ? heldRow(el, style, 'l0', '  ⎿  ', '', <Text dimColor>(No output)</Text>) : head.map((l, i) => heldRow(el, style, `l${i}`, i ? '     ' : '  ⎿  ', l, <Text wrap="truncate-end">{l === '' ? ' ' : l}</Text>))}
+      {head.length === 0 ? heldRow(el, style, 'l0', '  ⎿  ', '', <Text dimColor>(No output)</Text>) : head.map((l, i) => heldRow(el, style, `l${i}`, i ? '     ' : '  ⎿  ', l, <Text wrap="truncate-end" dimColor={style.shellOutput === 'dim'}>{l === '' ? ' ' : l}</Text>))}
       {shown.length > head.length ? heldRow(el, style, 'more', '     ', '', <Text dimColor>{`… +${shown.length - head.length} lines`}</Text>) : null}
     </Box>
   )

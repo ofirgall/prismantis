@@ -136,6 +136,13 @@
       "default": "full",
       "options": ["full", "quiet"]
     },
+    "shellOutput": {
+      "type": "string",
+      "title": "Shell output",
+      "description": "How the lines a shell command printed draw under its row. plain: in the terminal's text color. dim: muted, so the rows and Claude's words stand out. Applies where prismantis draws the output, with toolOutput quiet.",
+      "default": "plain",
+      "options": ["plain", "dim"]
+    },
     "taskStyle": {
       "type": "string",
       "title": "Task list style",

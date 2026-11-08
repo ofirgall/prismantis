@@ -357,6 +357,22 @@ test('toolOutput quiet draws shell results itself, a few lines and no approval l
   await use.unmount()
 })
 
+for (const shellOutput of ['plain', 'dim'] as const) {
+  test(`shellOutput ${shellOutput} draws quiet shell output ${shellOutput === 'dim' ? 'muted' : 'in the text color'}`, { options: { toolOutput: 'quiet', shellOutput } }, async ($, on) => {
+    engine(on)
+    for (const surface of ['terminal', 'desktop'] as const) {
+      const out = await $.ui.mount({
+        plugin: 'prismantis',
+        surface,
+        component: 'ToolResult',
+        props: { tool_use_id: `s-${shellOutput}`, tool: 'Bash', output: { stdout: 'M  src/app.ts\n', stderr: '' }, isErrored: false },
+      })
+      expect(!!(await out.find({ type: 'Text', text: /^M {2}src\/app\.ts$/ }))?.props.dimColor).toBe(shellOutput === 'dim')
+      await out.unmount()
+    }
+  })
+}
+
 test('toolOutput full leaves every result to the engine', async ($, on) => {
   engine(on)
   const [use, res] = result('Bash', { command: 'sed -n 1,20p app.py' }, 'f-1')
