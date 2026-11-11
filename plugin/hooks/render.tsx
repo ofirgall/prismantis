@@ -2109,6 +2109,14 @@ const diffBox = (el: ElementTable, style: Style, rows: DiffLine[], fold: Fold, i
     </Text>
   )
   const press = style.pressPreview === true ? toggle?.around : undefined
+  if (toggle && shown.length === 0) {
+    return (
+      <Box key={`card${key}`} flexDirection="row" columnGap={1} flexShrink={1} {...frame}>
+        {press ? press(<Text key="all">{head}</Text>, { inverse: false }) : head}
+        {toggle.element}
+      </Box>
+    )
+  }
   return (
     <Box key={`card${key}`} flexDirection="column" flexShrink={1} {...frame}>
       {press ? press(<Text key="all">{head}{'\n'}{diffText(el, style, shown, path, columns, budget)}</Text>, { inverse: false }) : [head, ...diffBody(el, style, shown, path, columns, budget)]}
@@ -2307,6 +2315,14 @@ const wholeFileCard = (el: ElementTable, style: Style, file: WholeFile, fold: Fo
   const band = press && !marked ? previewBand(style.theme, style.background) : undefined
   const rows = wholeRows(el, style, file, shown, { marked, press, band, columns, budget })
   const rest = n > shown && (toggle ? !toggle.folded : created)
+  if (toggle && !toggle.faced && shown === 0) {
+    return (
+      <el.Box key={`file${key}`} flexDirection="row" columnGap={1}>
+        {wholeBody(el, style, file, head, rows, toggle, band)}
+        {toggle.element}
+      </el.Box>
+    )
+  }
   return (
     <el.Box key={`file${key}`} flexDirection="column">
       {wholeBody(el, style, file, head, rows, toggle, band)}
