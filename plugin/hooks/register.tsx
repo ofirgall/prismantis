@@ -10,7 +10,7 @@ import type { ClipboardBackend, HelperCommand } from './clipboard'
 import { clipboardCommand, drawsImages, imageCommand } from './clipboard'
 import { FIGURE_HINT } from './figure'
 import { drawDiagrams } from './mermaid'
-import type { CopyButton, DrawPaste, Fold, Hues, TerminalEnv } from './render'
+import type { CopyButton, DrawPaste, Drawn, Fold, Hues, TerminalEnv } from './render'
 import { MARK, bashEdits, lineCount, drawMath, drawsHyperlinks, editNotes, fileRoot, hasShellOutput, instanceKey, isReadOnlyCall, leftToEngine, markerRoom, mirrored, noteTip, pasteLang, pathsToProbe, toolPathsToProbe, remember, rememberCall, renderBashEdits, renderBlocks, renderDiffCard, renderExpandedShell, renderFailure, renderReply, renderShellResult, renderToolGroup, renderToolRow, renderTurnDuration, renderUserPrompt, replyRoom, replyStyleFor, takesClickableMarks, takesEditorLinks, takesHttpLinks, takesMonoText, withoutBashEdits } from './render'
 import type { SetupStep } from './help'
 import { HINT, ISSUE_HINT, NARROW_PANE, narrowHint, SETUP_DONE, SETUP_PANE_KEYS, SETUP_PANE_OPENED, THEME_PREVIEW, findSetup, helpText, languageShowcase, rtlShowcaseText, setupParts, setupSteps, setupText, showcaseText } from './help'
@@ -19,6 +19,7 @@ import { textRows } from './layout'
 import type { Style } from './theme'
 import { RANDOM_THEMES, pickTheme, resolveStyle } from './theme'
 import { DEFAULT_COLUMNS, MIN_COLUMNS } from './layout'
+import { diagramKind, viewerCommand, viewerDir, viewerFile } from './viewer'
 import type { Terminal } from './rtl'
 import { ROW_MARK_TEXT, TERMINALS, hasRtl, opensLatin } from './rtl'
 
@@ -545,6 +546,41 @@ const copyNow = async ($: EngineInterface, style: Style, content: string, surfac
   return failure ? `Copied as plain text (${failure})` : 'Copied'
 }
 
+const openDiagram = async ($: EngineInterface, style: Style, source: string): Promise<string> => {
+  const tmp = (await $.env.get('TMPDIR')) ?? (await $.env.get('TEMP')) ?? '/tmp'
+  const file = viewerFile(source)
+  const path = `${viewerDir(tmp)}/${file.name}`
+  const argv = viewerCommand(path, style.mermaidViewer, style.htmlCopy, await $.env.get('SystemRoot'))
+  if (!argv) return 'No Markdown viewer here: set mermaidViewer'
+  await $.fs.write(path, file.text)
+  const result = await $.process.run(argv, { timeoutMs: 10000 }).catch(() => null)
+  if (!result) return `Could not run ${argv[0]}`
+  const done = result.exitCode === 0 || (style.htmlCopy === 'windows' && !style.mermaidViewer.trim())
+  return done ? `Opened ${file.name}` : result.stderr.trim() || `${argv[0]} exited with ${result.exitCode}`
+}
+
+const viewDiagrams = ($: EngineInterface, el: ReturnType<EngineInterface['ui']['resolve']>, style: Style, blocks: Block[], drawn: Drawn): Drawn => {
+  if (!style.mermaid || style.mermaidView === 'inline') return drawn
+  const { Box, Button, Text } = el
+  for (const [i, block] of blocks.entries()) {
+    if (block.kind !== 'code' || block.lang.toLowerCase() !== 'mermaid' || block.isOpen) continue
+    const source = block.lines.join('\n')
+    const shown = drawn.get(i)
+    if (style.mermaidView === 'both' && !shown?.element) continue
+    const open = <Button key={`view${i}`} variant="secondary" label="↗ open" onPress={async () => $.ui.toast(await openDiagram($, style, source).catch(() => 'Could not open the diagram'))} />
+    drawn.set(i, shown?.element && style.mermaidView === 'both'
+      ? { ...shown, element: <Box key={`b${i}`} flexDirection="column">{shown.element}<Box alignSelf="flex-start">{open}</Box></Box> }
+      : { element: (
+        <Box key={`b${i}`} flexDirection="row" columnGap={1}>
+          <Text color={style.theme.diagram}>◇</Text>
+          <Text color={style.theme.diagramText}>{`${diagramKind(source)} · ${block.lines.length} lines`}</Text>
+          {open}
+        </Box>
+      ) })
+  }
+  return drawn
+}
+
 const drawMarkdown = ($: EngineInterface, el: ReturnType<EngineInterface['ui']['resolve']>, style: Style, blocks: ReturnType<typeof parse>, columns: number, math: Map<number, Typeset> = new Map(), pictures: Map<number, Picture> = new Map(), reply?: string, open?: string[], notes?: { id: string; press: boolean }): RenderElement[] => {
   const { Button } = el
   const copy = (text: string | (() => string), key: string, label = '⧉ copy', rich?: (() => string) | 'png', hues?: () => Hues) => {
@@ -561,7 +597,7 @@ const drawMarkdown = ($: EngineInterface, el: ReturnType<EngineInterface['ui']['
       />
     ) : null
   }
-  const drawn = drawDiagrams(el, style, blocks, columns - markerRoom(style))
+  const drawn = viewDiagrams($, el, style, blocks, drawDiagrams(el, style, blocks, columns - markerRoom(style)))
   const Image = 'Image' in el ? el.Image : null
   if (Image) {
     for (const [i, formula] of math) {

@@ -153,6 +153,8 @@ Code blocks tagged `mermaid` draw as colored text art:
 
 Diagrams too wide for the window, or over 80 lines, stay as code. `mermaidAscii` swaps box-drawing characters for `+ - |`.
 
+To keep diagrams out of the chat, set `mermaidView` to `viewer`: each finished diagram draws as one line, like `◇ flowchart · 12 lines [↗ open]`. `↗ open` writes the block to `$TMPDIR/prismantis-mermaid/diagram-<hash>.md` and opens it in your Markdown viewer, so a viewer that renders mermaid (VS Code's preview, Typora, Obsidian) shows the full diagram. `both` keeps the drawing and adds the button. `mermaidViewer` names the program to run; empty uses `open` on macOS, `xdg-open` on Linux and `explorer.exe` on Windows. Over SSH, with no viewer named, the button says there is nothing to open.
+
 ### Figures
 
 Some things read better as a picture than as a diagram: a timeout racing a retry, the layout of a screen, a system before and after a change. Code blocks tagged `figure` draw line by line as written, in the theme's colors:
@@ -404,6 +406,8 @@ Options sit under `options`, keyed by the plugin's install name. Project setting
 | `rtl` | `auto`, a terminal (`warp`, `kitty`, `apple-terminal`, `iterm`, `ghostty`, `wezterm`, `vscode`, `alacritty`, `windows-terminal`, `gnome`, `konsole`), `off` | `auto` |
 | `mermaid` | `true`, `false` | `true` |
 | `mermaidAscii` | `true`, `false` | `false` |
+| `mermaidView` | `inline` (drawn in the chat), `both` (drawn, with an `↗ open` button), `viewer` (a one-line card with the `↗ open` button instead of the drawing) | `inline` |
+| `mermaidViewer` | the program `↗ open` runs, like `code` or `open -a Typora`; empty uses the system's default app for `.md` | empty |
 | `codeStyle` | `plain` (no frame), `framed` (a rounded box), `filled` (a background, or the box in a theme with no colors), `card` (a rounded box on a background) | `plain` |
 | `pieStyle` | `round` (a circle with a legend), `bars` (one bar per slice) | `round` |
 | `latex` | `true`, `false` | `false` |
