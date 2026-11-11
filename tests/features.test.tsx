@@ -2491,6 +2491,28 @@ test('an unknown diffStyle draws the card', { options: { diffStyle: 'fancy' } },
   await ui.unmount()
 })
 
+for (const diffFold of ['long', 'always'] as const) {
+  test(`diffFold ${diffFold} ${diffFold === 'always' ? 'folds every diff to its header' : 'keeps short diffs open'}, in edit, write and shell edit cards`, { options: { diffFold } }, async ($, on) => {
+    engine(on)
+    claudeAt(on, '2.1.295')
+    const bash = { stdout: '', stderr: '', interrupted: false, bashEditDiff: { files: [{ filePath: '/tmp/app.ts', hunks: patch.structuredPatch }], moreFiles: 0 } }
+    const created = { type: 'create', filePath: '/tmp/new.ts', content: ts(3).join('\n') }
+    for (const [tool, output, key, line] of [['Edit', patch, 'fold', /^const c = 4$/], ['Bash', bash, 'fold0', /^const c = 4$/], ['Write', created, 'fold', /^export const n3 = 3$/]] as const) {
+      const mounted = editResult('terminal', tool, output)
+      const ui = await $.ui.mount({ ...mounted, props: { ...mounted.props, tool_use_id: `f-${tool}` } })
+      expect(!!(await ui.find({ type: 'Text', text: line }))).toBe(diffFold === 'long')
+      const fold = await ui.find({ key })
+      expect(fold?.props.label).toBe(diffFold === 'always' ? `+${tool === 'Write' ? 3 : 4} more lines` : undefined)
+      if (diffFold === 'always') {
+        await ui.press({ key })
+        expect(await ui.find({ type: 'Text', text: line })).toBeDefined()
+        expect((await ui.find({ key }))?.props.label).toBe('show less')
+      }
+      await ui.unmount()
+    }
+  })
+}
+
 const twoHunks = [
   { oldStart: 4, newStart: 4, oldLines: 3, newLines: 3, lines: [' const a = 3', '-const b = 4', '+const b = 5', ' const c = 6'] },
   { oldStart: 50, newStart: 50, oldLines: 3, newLines: 3, lines: [' const x = 50', '-const y = 51', '+const y = 52', ' const z = 52'] },

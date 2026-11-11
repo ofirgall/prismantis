@@ -2094,8 +2094,9 @@ const diffBox = (el: ElementTable, style: Style, rows: DiffLine[], fold: Fold, i
   const added = rows.filter(r => r.mark === '+').length
   const removed = rows.filter(r => r.mark === '-').length
   const total = realLines(rows)
-  const toggle = total > DIFF_LINES ? fold?.(id, total - DIFF_LINES, `fold${key}`) : null
-  const shown = firstLines(rows, toggle?.folded === false ? DIFF_MAX : DIFF_LINES)
+  const keep = style.diffFold === 'always' ? 0 : DIFF_LINES
+  const toggle = total > keep ? fold?.(id, total - keep, `fold${key}`) : null
+  const shown = firstLines(rows, toggle?.folded === false ? DIFF_MAX : keep)
   const hidden = total - realLines(shown)
   const marks = markColors(t)
   const frame = style.diffStyle === 'card' ? { borderStyle: 'round', borderColor: t.rule, paddingX: 1 } : {}
@@ -2281,9 +2282,11 @@ const wholeRows = (el: ElementTable, style: Style, file: WholeFile, shown: numbe
 
 type Toggle = ReturnType<Fold>
 
-const wholeToggle = (fold: Fold, file: WholeFile, head: RenderElement, id: string, key: string): Toggle => {
+const previewOf = (style: Style): number => (style.diffFold === 'always' ? 0 : PREVIEW_LINES)
+
+const wholeToggle = (style: Style, fold: Fold, file: WholeFile, head: RenderElement, id: string, key: string): Toggle => {
   const n = file.lines.length
-  if (file.kind === 'created') return n > PREVIEW_LINES ? fold(id, n - PREVIEW_LINES, `fold${key}`) : null
+  if (file.kind === 'created') return n > previewOf(style) ? fold(id, n - previewOf(style), `fold${key}`) : null
   return n > 0 ? fold(id, n, `fold${key}`, { label: `show ${lineCount(n)}`, face: () => head }) : null
 }
 
@@ -2298,8 +2301,8 @@ const wholeFileCard = (el: ElementTable, style: Style, file: WholeFile, fold: Fo
   const n = file.lines.length
   const created = file.kind === 'created'
   const head = wholeHead(el, style, file)
-  const toggle = wholeToggle(fold, file, head, id, key)
-  const shown = Math.min(n, toggle?.folded === false ? DIFF_MAX : created ? PREVIEW_LINES : 0)
+  const toggle = wholeToggle(style, fold, file, head, id, key)
+  const shown = Math.min(n, toggle?.folded === false ? DIFF_MAX : created ? previewOf(style) : 0)
   const press = style.pressPreview === true && toggle?.around !== undefined
   const band = press && !marked ? previewBand(style.theme, style.background) : undefined
   const rows = wholeRows(el, style, file, shown, { marked, press, band, columns, budget })

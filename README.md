@@ -407,6 +407,7 @@ Options sit under `options`, keyed by the plugin's install name. Project setting
 | `latex` | `true`, `false` | `false` |
 | `<token>Color` | any color, see below | theme |
 | `diffStyle` | `card` (rounded box, tinted lines), `full` (no box, lines tinted across the width), `marks` (no tint, colored `+` and `−` marks), `bar` (no tint, a colored `▌` before each changed line) | `card` |
+| `diffFold` | `long` (diffs over 20 lines fold to their first 20, a new file shows its first 10), `always` (every diff starts as its header alone, opened by a click) | `long` |
 A color is hex (`#a6e3a1`, `#fc0`), `rgb(166,227,161)`, `ansi256(114)` or a name (`green`, `cyanBright`). Values that don't parse are ignored. Every token has a `<token>Color` option and a row in `/config`:
 
 | Token | Colors |
