@@ -47,6 +47,8 @@ export type Style = {
   highlightPaths: boolean
   mermaid: boolean
   mermaidAscii: boolean
+  mermaidView: 'inline' | 'both' | 'viewer'
+  mermaidViewer: string
   copyButtons: boolean
   folds: 'closed' | 'open'
   copyButtonStyle: 'dim' | 'inline' | 'hover'
@@ -131,6 +133,8 @@ export const resolveStyle = (options: PluginOptions): Style => {
     highlightPaths: options.highlightPaths !== false,
     mermaid: options.mermaid !== false,
     mermaidAscii: options.mermaidAscii === true,
+    mermaidView: pick(options.mermaidView, ['inline', 'both', 'viewer'] as const, 'inline'),
+    mermaidViewer: typeof options.mermaidViewer === 'string' ? options.mermaidViewer : '',
     copyButtons: options.copyButtons !== false,
     folds: pick(options.folds, ['closed', 'open'] as const, 'closed'),
     copyButtonStyle: pick(options.copyButtonStyle, ['dim', 'inline', 'hover'] as const, 'dim'),

@@ -289,6 +289,19 @@
       "description": "Draw diagrams with + - | > instead of box-drawing characters, for fonts without them.",
       "default": false
     },
+    "mermaidView": {
+      "type": "string",
+      "title": "Mermaid view",
+      "description": "Where mermaid diagrams show. inline: drawn in the chat. both: drawn in the chat with an open button that shows the diagram in your Markdown viewer. viewer: a one-line card with that open button instead of the drawing, so diagrams stay out of the chat.",
+      "default": "inline",
+      "options": ["inline", "both", "viewer"]
+    },
+    "mermaidViewer": {
+      "type": "string",
+      "title": "Mermaid viewer",
+      "description": "The program the open button runs, its words split on spaces with the diagram's .md file added last, like code or open -a Typora. Empty opens the file in the system's default app for .md files.",
+      "default": ""
+    },
     "diagramColor": {
       "type": "string",
       "title": "Diagram lines",
