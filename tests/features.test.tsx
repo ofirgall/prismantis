@@ -2503,9 +2503,13 @@ for (const diffFold of ['long', 'always'] as const) {
       expect(!!(await ui.find({ type: 'Text', text: line }))).toBe(diffFold === 'long')
       const fold = await ui.find({ key })
       expect(fold?.props.label).toBe(diffFold === 'always' ? `+${tool === 'Write' ? 3 : 4} more lines` : undefined)
+      const card = tool === 'Bash' ? 'card0' : tool === 'Write' ? 'file' : 'card'
+      expect((await ui.find({ key: card }))?.props.flexDirection).toBe(diffFold === 'always' ? 'row' : 'column')
+      expect(await ui.find({ type: 'Text', text: /^$/ })).toBeUndefined()
       if (diffFold === 'always') {
         await ui.press({ key })
         expect(await ui.find({ type: 'Text', text: line })).toBeDefined()
+        expect((await ui.find({ key: card }))?.props.flexDirection).toBe('column')
         expect((await ui.find({ key }))?.props.label).toBe('show less')
       }
       await ui.unmount()
