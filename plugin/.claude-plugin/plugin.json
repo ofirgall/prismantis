@@ -441,6 +441,13 @@
       "default": "plain",
       "options": ["plain", "framed", "filled", "card"]
     },
+    "diffFold": {
+      "type": "string",
+      "title": "Diff folding",
+      "description": "Which diffs start folded. long: diffs over 20 lines fold to their first 20, and a new file shows its first 10 lines. always: every Edit, Write and shell edit diff starts as its header alone, opened by a click.",
+      "default": "long",
+      "options": ["long", "always"]
+    },
     "pieStyle": {
       "type": "string",
       "title": "Pie style",

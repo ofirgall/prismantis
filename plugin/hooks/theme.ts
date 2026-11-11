@@ -39,6 +39,7 @@ export type Style = {
   noteKey?: string
   pressPreview?: boolean
   diffStyle: 'card' | 'full' | 'marks' | 'bar'
+  diffFold: 'long' | 'always'
   codeStyle: 'plain' | 'framed' | 'filled' | 'card'
   pieStyle: 'round' | 'bars'
   highlightNumbers: boolean
@@ -122,6 +123,7 @@ export const resolveStyle = (options: PluginOptions): Style => {
     runningDot: pick(options.runningDot, ['ring', 'blink'] as const, 'ring'),
     unreadPrompts: options.unreadPrompts === true,
     diffStyle: pick(options.diffStyle, ['card', 'full', 'marks', 'bar'] as const, 'card'),
+    diffFold: pick(options.diffFold, ['long', 'always'] as const, 'long'),
     codeStyle: pick(options.codeStyle, ['plain', 'framed', 'filled', 'card'] as const, 'plain'),
     pieStyle: pick(options.pieStyle, ['round', 'bars'] as const, 'round'),
     highlightNumbers: options.highlightNumbers !== false,
